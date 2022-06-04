@@ -1,3 +1,5 @@
+import { Interaction, BaseCommandInteraction } from "discord.js";
+
 const fs = require("fs");
 const {Client, Intents} = require("discord.js");
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
@@ -73,4 +75,20 @@ client.login(settings.token).catch((error: any) => {
 });
 
 //Botがログインした時のイベント
-client.on("ready", () => console.info(colors.green + client.user.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。"));
+client.once("ready", () => {
+	console.info(colors.green + client.user.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
+
+	//コマンド登録
+	client.application.commands.set([{name: "wol", description: "リモートからPCを起動します。"}], "863035320052482068");
+});
+
+//コマンドの応答
+client.on("interactionCreate", (interaction: Interaction) => {
+	if(interaction.isCommand()) {
+		switch((interaction as BaseCommandInteraction).commandName) {
+			case "wol":
+				(interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
+				break;
+		}
+	}
+});
