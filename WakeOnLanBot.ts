@@ -1,8 +1,6 @@
 const fs = require("fs");
-/*
 const {Client, Intents} = require("discord.js");
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
-*/
 const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
 
 //設定ファイルの存在確認
@@ -59,3 +57,20 @@ if(settingsError) {
 	process.exit(1);
 }
 else console.info("設定ファイルを検証しました。エラーは見つかりませんでした。");
+
+//Botへのログイン
+console.info("Botにログインしています...");
+client.login(settings.token).catch((error: any) => {
+	switch(error.name) {
+		case "Error [TOKEN_INVALID]":
+			console.error(colors.red + "トークンが無効です。" + colors.reset);
+			break;
+		case "Error [DISALLOWED_INTENTS]":
+			console.error(colors.red + "インテントが無効または許可されていません。" + colors.reset);
+			break;
+	}
+	process.exit(1);
+});
+
+//Botがログインした時のイベント
+client.on("ready", () => console.info(colors.green + client.user.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。"));
