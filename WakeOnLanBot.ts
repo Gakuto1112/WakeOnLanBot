@@ -1,6 +1,7 @@
 import { Interaction, BaseCommandInteraction } from "discord.js";
 
 const fs = require("fs");
+const {exec} = require("child_process");
 const {Client, Intents} = require("discord.js");
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
 const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
@@ -14,7 +15,7 @@ try {
 catch(error: any) {
 	if(error.code == "ENOENT") {
 		console.error(colors.red + "Settings.jsonが存在しません。" + colors.reset);
-		const settingsPattern: {[key: string]: any} = {token: "<Botのトークン>", targetIP: "<リモートで起動させるPCのプライベートIPアドレス（例：192.168.x.x）>", deviceName: "<リモートで起動させるPCの名前>"};
+		const settingsPattern: {[key: string]: any} = {token: "<Botのトークン>", targetMacAddress: "<リモートで起動させるPCのMACアドレス（例：xx:xx:xx:xx:xx:xx）>", deviceName: "<リモートで起動させるPCの名前>"};
 		try {
 			fs.writeFileSync("Settings.json", JSON.stringify(settingsPattern, null, 4));
 		}
@@ -51,8 +52,8 @@ function printSettingsError(message: string): void {
 }
 //Botのトークン
 if(typeof(settings.token) != "string") printSettingsError("トークンの設定が不正です。");
-//IPアドレス
-if(!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(settings.targetIP)) printSettingsError("IPアドレスの設定が不正です。");
+//MACアドレス
+if(!/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/.test(settings.targetMacAddress)) printSettingsError("MACアドレスの設定が不正です。");
 //検証完了のメッセージ
 if(settingsError) {
 	console.info("設定ファイルを検証したところ、エラーが見つかりました。修正して下さい。");
@@ -83,11 +84,14 @@ client.once("ready", () => {
 });
 
 //コマンドの応答
-client.on("interactionCreate", (interaction: Interaction) => {
+client.on("interactionCreate", async (interaction: Interaction) => {
 	if(interaction.isCommand()) {
 		switch((interaction as BaseCommandInteraction).commandName) {
 			case "wol":
-				(interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
+				await (interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
+				exec("sudo etherwake " + settings.targetMacAddress, async (error: Error, stdout: string, stderr: string) => {
+					if(error) await (interaction as BaseCommandInteraction).followUp(":x: コマンドの実行に失敗しました\n" + stderr);
+				});
 				break;
 		}
 	}
