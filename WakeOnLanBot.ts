@@ -5,9 +5,9 @@ const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_M
 */
 const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
 
-
-//設定ファイルの検証
-let settings: {[key: string]: any} = {}; //設定ファイルからの設定情報
+//設定ファイルの存在確認
+console.info("Settings.jsonを読み込んでいます...");
+let settings: {[key: string]: any}; //設定ファイルからの設定情報
 try {
 	settings = JSON.parse(fs.readFileSync("Settings.json", "utf-8"));
 }
@@ -39,3 +39,23 @@ catch(error: any) {
 		process.exit(1);
 	}
 }
+console.info("Settings.jsonを読み込みました。");
+
+//設定値の検証
+console.info("設定値の検証をしています...");
+let settingsError: boolean = false;
+function printSettingsError(message: string): void {
+	//設定値の検証時にエラーを出力する。
+	console.error(colors.red + message + colors.reset);
+	settingsError = true;
+}
+//Botのトークン
+if(typeof(settings.token) != "string") printSettingsError("トークンの設定が不正です。");
+//IPアドレス
+if(!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(settings.targetIP)) printSettingsError("IPアドレスの設定が不正です。");
+//検証完了のメッセージ
+if(settingsError) {
+	console.info("設定ファイルを検証したところ、エラーが見つかりました。修正して下さい。");
+	process.exit(1);
+}
+else console.info("設定ファイルを検証しました。エラーは見つかりませんでした。");
