@@ -97,7 +97,7 @@ client.once("ready", () => {
 				}
 				else {
 					console.info("対象のデバイスは停止しています。");
-					client.user.setActivity({name: settings.deviceName, type: 0});
+					client.user.setActivity();
 				}
 			}
 		});
