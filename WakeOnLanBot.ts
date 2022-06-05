@@ -1,4 +1,4 @@
-import { Interaction, BaseCommandInteraction } from "discord.js";
+import {Interaction, BaseCommandInteraction} from "discord.js";
 
 const fs = require("fs");
 const {exec} = require("child_process");
@@ -91,8 +91,14 @@ client.once("ready", () => {
 		exec("ping " + settings.targetIPAddress + " -c 5", (error: Error, stdout: string, stderr: string) => {
 			const pingRegExp: RegExp = new RegExp("\\d+ received");
 			if(pingRegExp.test(stdout)) {
-				if(Number(/\d+/.exec(pingRegExp.exec(stdout)![0])![0]) >= 1) console.log("作動しています。");
-				else console.log("停止しています。");
+				if(Number(/\d+/.exec(pingRegExp.exec(stdout)![0])![0]) >= 1) {
+					console.info("対象のデバイスは作動しています。");
+					client.user.setActivity({name: settings.deviceName, type: 0});
+				}
+				else {
+					console.info("対象のデバイスは停止しています。");
+					client.user.setActivity({name: settings.deviceName, type: 0});
+				}
 			}
 		});
 	}
