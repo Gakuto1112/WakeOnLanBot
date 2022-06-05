@@ -15,7 +15,7 @@ try {
 catch(error: any) {
 	if(error.code == "ENOENT") {
 		console.error(colors.red + "Settings.jsonが存在しません。" + colors.reset);
-		const settingsPattern: {[key: string]: any} = {token: "<Botのトークン>", targetMacAddress: "<リモートで起動させるPCのMACアドレス（例：xx:xx:xx:xx:xx:xx）>", deviceName: "<リモートで起動させるPCの名前>"};
+		const settingsPattern: {[key: string]: any} = {token: "<Botのトークン>", targetIPAddress: "<リモートで起動させるPCのプライベートIPアドレス（例：192.168.x.x）>", targetMacAddress: "<リモートで起動させるPCのMACアドレス（例：xx:xx:xx:xx:xx:xx）>", deviceName: "<リモートで起動させるPCの名前>"};
 		try {
 			fs.writeFileSync("Settings.json", JSON.stringify(settingsPattern, null, 4));
 		}
@@ -52,6 +52,8 @@ function printSettingsError(message: string): void {
 }
 //Botのトークン
 if(typeof(settings.token) != "string") printSettingsError("トークンの設定が不正です。");
+//IPアドレス
+if(!/^(\d{1,3}\.){3}\d{1,3}$/.test(settings.targetIPAddress)) printSettingsError("IPアドレスの設定が不正です。");
 //MACアドレス
 if(!/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/.test(settings.targetMacAddress)) printSettingsError("MACアドレスの設定が不正です。");
 //検証完了のメッセージ
@@ -81,6 +83,21 @@ client.once("ready", () => {
 
 	//コマンド登録
 	client.application.commands.set([{name: "wol", description: "リモートからPCを起動します。"}], "863035320052482068");
+
+	//1分おきにping問い合わせ
+	function ping(): void {
+		//ping問い合わせ
+		console.info("ping問い合わせを行っています...");
+		exec("ping " + settings.targetIPAddress + " -c 5", (error: Error, stdout: string, stderr: string) => {
+			const pingRegExp: RegExp = new RegExp("\\d+ received");
+			if(pingRegExp.test(stdout)) {
+				if(Number(/\d+/.exec(pingRegExp.exec(stdout)![0])![0]) >= 1) console.log("作動しています。");
+				else console.log("停止しています。");
+			}
+		});
+	}
+	ping();
+	setInterval(() => ping(), 60000);
 });
 
 //コマンドの応答
@@ -88,9 +105,13 @@ client.on("interactionCreate", async (interaction: Interaction) => {
 	if(interaction.isCommand()) {
 		switch((interaction as BaseCommandInteraction).commandName) {
 			case "wol":
+				console.info("マジックパケットを送信します。");
 				await (interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
 				exec("sudo etherwake " + settings.targetMacAddress, async (error: Error, stdout: string, stderr: string) => {
-					if(error) await (interaction as BaseCommandInteraction).followUp(":x: コマンドの実行に失敗しました\n" + stderr);
+					if(error) {
+						console.error(colors.red + "マジックパケットの送信に失敗しました。" + colors.reset + "\n" + stderr);
+						await (interaction as BaseCommandInteraction).followUp(":x: マジックパケットの送信に失敗しました\n" + stderr);
+					}
 				});
 				break;
 		}
