@@ -90,15 +90,21 @@ client.once("ready", () => {
 		console.info("ping問い合わせを行っています...");
 		exec("ping " + settings.targetIPAddress + " -c 5", (error: Error, stdout: string, stderr: string) => {
 			const pingRegExp: RegExp = new RegExp("\\d+ received");
-			if(pingRegExp.test(stdout)) {
-				if(Number(/\d+/.exec(pingRegExp.exec(stdout)![0])![0]) >= 1) {
-					console.info("対象のデバイスは作動しています。");
-					client.user.setActivity({name: settings.deviceName, type: 0});
-				}
-				else {
+			if(error) {
+				if(pingRegExp.test(stderr)) {
 					console.info("対象のデバイスは停止しています。");
 					client.user.setActivity();
 				}
+				else {
+					console.group(colors.red + "pingコマンド実行中にエラーが発生しました。" + colors.reset);
+					console.error(stdout);
+					console.groupEnd();
+					client.user.setActivity();
+				}
+			}
+			else {
+				console.info("対象のデバイスは作動しています。");
+				client.user.setActivity({name: settings.deviceName, type: 0});
 			}
 		});
 	}
@@ -115,7 +121,9 @@ client.on("interactionCreate", async (interaction: Interaction) => {
 				await (interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
 				exec("sudo etherwake " + settings.targetMacAddress, async (error: Error, stdout: string, stderr: string) => {
 					if(error) {
-						console.error(colors.red + "マジックパケットの送信に失敗しました。" + colors.reset + "\n" + stderr);
+						console.group(colors.red + "マジックパケットの送信に失敗しました。" + colors.reset);
+						console.error(stderr);
+						console.groupEnd();
 						await (interaction as BaseCommandInteraction).followUp(":x: マジックパケットの送信に失敗しました\n" + stderr);
 					}
 				});
