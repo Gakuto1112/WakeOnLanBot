@@ -82,7 +82,7 @@ client.once("ready", () => {
 	console.info(colors.green + client.user.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
 
 	//コマンド登録
-	client.application.commands.set([{name: "wol", description: "リモートからPCを起動します。"}], "863035320052482068");
+	client.application.commands.set([{name: "wol", description: "リモートからPCを起動します。"}]);
 
 	//1分おきにping問い合わせ
 	function ping(): void {
