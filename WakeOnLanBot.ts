@@ -1,9 +1,46 @@
 import fs from "node:fs";
 import child_process from "child_process";
-import {Client, Intents, Interaction, BaseCommandInteraction} from "discord.js";
+import {Client, Intents, Interaction, BaseCommandInteraction, ButtonInteraction} from "discord.js";
+import * as ssh from "ssh2";
+import iconv from "iconv";
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
 export const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
+
+//SSHコマンドを実行する。
+export async function execSSHCommand(command: string, successCallback: Function = (stdout: string) => {}, errorCallback: Function = (stderr: string) => {}) {
+	const client = new ssh.Client();
+	client.once("ready", () => {
+		client.exec(command, (error: Error | undefined, stream: ssh.Channel) => {
+			let alreadyCallBackRunned: boolean = false;
+			if(error) {
+				console.group(colors.red + "SSH接続でエラーが発生しました。\n\t" + colors.reset);
+				console.error(error.message);
+				console.groupEnd();
+			}
+			stream.once("close", () => {
+				if(!alreadyCallBackRunned) successCallback("");
+				client.end();
+			});
+			stream.stdout.once("data", (data: Buffer) => {
+				alreadyCallBackRunned = true;
+				successCallback(new iconv.Iconv("shift-jis", "utf-8").convert(data).toString());
+			});
+			stream.stderr.once("data", (data: Buffer) => {
+				alreadyCallBackRunned = true;
+				errorCallback(new iconv.Iconv("shift-jis", "utf-8").convert(data).toString());
+			});
+		});
+	});
+	client.on("error", (error: any) => {
+		if(error.errno != -104) {
+			console.group(colors.red + "SSH接続でエラーが発生しました。\n\t" + colors.reset);
+			console.error(error.message);
+			console.groupEnd();
+		}
+	});
+	client.connect({host: settings.targetIPAddress, port: settings.port, username: settings.userName, privateKey: fs.readFileSync(settings.privateKeyFile)});
+}
 
 //設定ファイルの存在確認
 console.info("Settings.jsonを読み込んでいます...");
@@ -14,7 +51,7 @@ try {
 catch(error: any) {
 	if(error.code == "ENOENT") {
 		console.error(colors.red + "Settings.jsonが存在しません。" + colors.reset);
-		const settingsPattern: {[key: string]: any} = {token: "<Botのトークン>", targetIPAddress: "<リモートで起動させるPCのプライベートIPアドレス（例：192.168.x.x）>", targetMacAddress: "<リモートで起動させるPCのMACアドレス（例：xx:xx:xx:xx:xx:xx）>", deviceName: "<リモートで起動させるPCの名前>"};
+		const settingsPattern: {[key: string]: any} = {token: "<Botのトークン>", targetIPAddress: "<リモートで起動させるコンピューターのプライベートIPアドレス（例：192.168.x.x）>", targetMacAddress: "<リモートで起動させるコンピューターのMACアドレス（例：xx:xx:xx:xx:xx:xx）>", deviceName: "<リモートで起動させるコンピューターの名前>", userName: "ssh接続におけるユーザー名", port: "ssh接続で使用するポート番号、デフォルトは22", privateKeyFile: "秘密鍵ファイルへのパス"};
 		try {
 			fs.writeFileSync("Settings.json", JSON.stringify(settingsPattern, null, 4));
 		}
@@ -55,6 +92,36 @@ if(typeof(settings.token) != "string") printSettingsError("トークンの設定
 if(!/^(\d{1,3}\.){3}\d{1,3}$/.test(settings.targetIPAddress)) printSettingsError("IPアドレスの設定が不正です。");
 //MACアドレス
 if(!/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/.test(settings.targetMacAddress)) printSettingsError("MACアドレスの設定が不正です。");
+//ユーザー名
+if(typeof(settings.userName) != "string") printSettingsError("ユーザー名の設定が不正です。");
+//ポート番号
+if(typeof(settings.port) == "number") {
+	if(Number.isInteger(settings.port)) {
+		if(settings.port < 1 || settings.port > 65535) printSettingsError("ポート番号は1から65535の範囲内である必要があります。");
+	}
+	else printSettingsError("ポート番号は整数である必要があります。");
+}
+else printSettingsError("ポート番号の設定が不正です。");
+//秘密鍵ファイル
+if(typeof(settings.privateKeyFile) == "string") {
+	try {
+		fs.accessSync(settings.privateKeyFile, fs.constants.R_OK);
+	}
+	catch(error: any) {
+		switch(error.code) {
+			case "ENOENT":
+				printSettingsError("秘密鍵ファイルが存在しません。");
+				break;
+			case "EPERM":
+				printSettingsError("秘密鍵ファイルの読み取り権限がありません。");
+				break;
+			default:
+				printSettingsError("秘密鍵ファイルを読み込めません。");
+				break;
+		}
+	}
+}
+else printSettingsError("秘密鍵ファイルのパスの設定が不正です。");
 //検証完了のメッセージ
 if(settingsError) {
 	console.info("設定ファイルを検証したところ、エラーが見つかりました。修正して下さい。");
@@ -77,11 +144,12 @@ client.login(settings.token).catch((error: any) => {
 });
 
 //Botがログインした時のイベント
+export let isPCAwake: boolean = false; //PCが起動しているかどうか
 client.once("ready", () => {
 	console.info(colors.green + client.user!.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
 
 	//コマンド登録
-	client.application!.commands.set([{name: "wol", description: "リモートからPCを起動します。"}], "863035320052482068");
+	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}], "863035320052482068");
 
 	//1分おきにping問い合わせ
 	function ping(): void {
@@ -92,17 +160,20 @@ client.once("ready", () => {
 			if(error) {
 				if(pingRegExp.test(stderr)) {
 					console.info("対象のデバイスは停止しています。");
+					isPCAwake = false;
 					client.user!.setActivity();
 				}
 				else {
 					console.group(colors.red + "pingコマンド実行中にエラーが発生しました。" + colors.reset);
 					console.error(stdout);
 					console.groupEnd();
+					isPCAwake = false;
 					client.user!.setActivity();
 				}
 			}
 			else {
 				console.info("対象のデバイスは作動しています。");
+				isPCAwake = true;
 				client.user!.setActivity({name: settings.deviceName, type: 0});
 			}
 		});
@@ -115,13 +186,24 @@ client.once("ready", () => {
 client.on("interactionCreate", async (interaction: Interaction) => {
 	if(interaction.isCommand()) {
 		if(fs.existsSync("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts")) {
-			await import("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts").then(async (command) => {
+			import("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts").then(async (command) => {
 				await new command.Command().run(interaction as BaseCommandInteraction);
 			});
 		}
 		else {
 			console.error(colors.red + "\"" + (interaction as BaseCommandInteraction).commandName + "\"に対応するモジュールが存在しません。" + colors.reset);
 			await (interaction as BaseCommandInteraction).reply(":x: 送信されたコマンドに対応するモジュールが存在しません。\n");
+		}
+	}
+	else if(interaction.isButton()) {
+		if(fs.existsSync("./commands/button_" + (interaction as ButtonInteraction).customId + ".ts")) {
+			import("./commands/button_" + (interaction as ButtonInteraction).customId + ".ts").then(async (buttonCommand) => {
+				await new buttonCommand.ButtonCommand().run(interaction as ButtonInteraction);
+			})
+		}
+		else {
+			console.error(colors.red + "\"button_" + (interaction as ButtonInteraction).customId + "\"に対応するモジュールが存在しません。" + colors.reset);
+			await (interaction as ButtonInteraction).reply(":x: 送信されたコマンドに対応するモジュールが存在しません。\n");
 		}
 	}
 });

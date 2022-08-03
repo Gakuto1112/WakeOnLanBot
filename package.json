@@ -1,5 +1,11 @@
 {
   "dependencies": {
-    "discord.js": "^13.7.0"
+    "@types/iconv": "^3.0.1",
+    "@types/node-ssh": "^7.0.1",
+    "@types/ssh2": "^1.11.5",
+    "discord.js": "^13.7.0",
+    "iconv": "^3.0.1",
+    "ssh2": "^1.11.0",
+    "ts-node": "^10.9.1"
   }
 }
