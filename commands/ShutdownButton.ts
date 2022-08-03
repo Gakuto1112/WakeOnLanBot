@@ -3,7 +3,7 @@ import {colors, execSSHCommand} from "../WakeOnLanBot";
 import {ButtonInteraction} from "discord.js";
 
 export class ShutdownButtonCommand extends ButtonCommand {
-	protected readonly COMMAND: string = "shutdown /s /t 60 /c \"マジックパケット送信Botによりシャットダウンが実行されました。\"";
+	protected readonly COMMAND: string = "shutdown /s /t 0";
 	protected readonly DONE_MESSAGE: string = "コンピューターをシャットダウンします。"
 	public async run(interaction: ButtonInteraction): Promise<void> {
 		await execSSHCommand(this.COMMAND, async (stdout: string) => await interaction.reply(":desktop: " + this.DONE_MESSAGE), async (stderr: string) => {

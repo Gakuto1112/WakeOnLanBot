@@ -162,7 +162,7 @@ client.once("ready", () => {
 	buttonCommands = {shutdown_confirm: new ShutdownButtonCommand(), reboot_confirm: new RebootButtonCommand()};
 
 	//コマンド登録
-	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}, {name: "reboot", description: "コンピューターを再起動します。"}], "863035320052482068");
+	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}, {name: "reboot", description: "コンピューターを再起動します。"}]);
 
 	//1分おきにping問い合わせ
 	function ping(): void {
