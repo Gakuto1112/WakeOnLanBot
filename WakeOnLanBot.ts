@@ -1,8 +1,8 @@
-import fs from "node:fs";
-import child_process from "child_process";
+import * as fs from "node:fs";
+import * as child_process from "child_process";
 import {Client, Intents, Interaction, BaseCommandInteraction, ButtonInteraction} from "discord.js";
 import * as ssh from "ssh2";
-import iconv from "iconv";
+import * as iconv from "iconv";
 import {WolCommand} from "./commands/Wol";
 import {Command} from "./commands/Command";
 import {ButtonCommand} from "./commands/ButtonCommand";
