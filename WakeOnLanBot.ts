@@ -1,8 +1,7 @@
-import {Interaction, BaseCommandInteraction} from "discord.js";
+import fs from "node:fs";
+import child_process from "child_process";
+import {Client, Intents, Interaction, BaseCommandInteraction} from "discord.js";
 
-const fs = require("fs");
-const {exec} = require("child_process");
-const {Client, Intents} = require("discord.js");
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
 const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
 
@@ -79,32 +78,32 @@ client.login(settings.token).catch((error: any) => {
 
 //Botがログインした時のイベント
 client.once("ready", () => {
-	console.info(colors.green + client.user.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
+	console.info(colors.green + client.user!.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
 
 	//コマンド登録
-	client.application.commands.set([{name: "wol", description: "リモートからPCを起動します。"}]);
+	client.application!.commands.set([{name: "wol", description: "リモートからPCを起動します。"}], "863035320052482068");
 
 	//1分おきにping問い合わせ
 	function ping(): void {
 		//ping問い合わせ
 		console.info("ping問い合わせを行っています...");
-		exec("ping " + settings.targetIPAddress + " -c 5", (error: Error, stdout: string, stderr: string) => {
+		child_process.exec("ping " + settings.targetIPAddress + " -c 5", (error: child_process.ExecException | null, stdout: string, stderr: string) => {
 			const pingRegExp: RegExp = new RegExp("\\d+ received");
 			if(error) {
 				if(pingRegExp.test(stderr)) {
 					console.info("対象のデバイスは停止しています。");
-					client.user.setActivity();
+					client.user!.setActivity();
 				}
 				else {
 					console.group(colors.red + "pingコマンド実行中にエラーが発生しました。" + colors.reset);
 					console.error(stdout);
 					console.groupEnd();
-					client.user.setActivity();
+					client.user!.setActivity();
 				}
 			}
 			else {
 				console.info("対象のデバイスは作動しています。");
-				client.user.setActivity({name: settings.deviceName, type: 0});
+				client.user!.setActivity({name: settings.deviceName, type: 0});
 			}
 		});
 	}
@@ -119,7 +118,7 @@ client.on("interactionCreate", async (interaction: Interaction) => {
 			case "wol":
 				console.info("マジックパケットを送信します。");
 				await (interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
-				exec("sudo etherwake " + settings.targetMacAddress, async (error: Error, stdout: string, stderr: string) => {
+				child_process.exec("sudo etherwake " + settings.targetMacAddress, async (error: child_process.ExecException | null, stdout: string, stderr: string) => {
 					if(error) {
 						console.group(colors.red + "マジックパケットの送信に失敗しました。" + colors.reset);
 						console.error(stderr);
