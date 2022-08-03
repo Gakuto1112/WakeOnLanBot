@@ -3,6 +3,11 @@ import child_process from "child_process";
 import {Client, Intents, Interaction, BaseCommandInteraction, ButtonInteraction} from "discord.js";
 import * as ssh from "ssh2";
 import iconv from "iconv";
+import {WolCommand} from "./commands/Wol";
+import {Command} from "./commands/Command";
+import {ButtonCommand} from "./commands/ButtonCommand";
+import {ShutDownCommand} from "./commands/Shutdown";
+import {ShutdownButtonCommand} from "./commands/ShutdownButtonCommand";
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
 export const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
@@ -144,12 +149,18 @@ client.login(settings.token).catch((error: any) => {
 });
 
 //Botがログインした時のイベント
+let commands: {[key: string]: Command};
+let buttonCommands: {[key: string]: ButtonCommand};
 export let isPCAwake: boolean = false; //PCが起動しているかどうか
 client.once("ready", () => {
 	console.info(colors.green + client.user!.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
 
+	//コマンドの読み込み
+	commands = {wol: new WolCommand(), shutdown: new ShutDownCommand()};
+	buttonCommands = {shutdown_confirm: new ShutdownButtonCommand()};
+
 	//コマンド登録
-	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}], "863035320052482068");
+	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}, {name: "reboot", description: "コンピューターを再起動します。"}], "863035320052482068");
 
 	//1分おきにping問い合わせ
 	function ping(): void {
@@ -185,10 +196,8 @@ client.once("ready", () => {
 //コマンドの応答
 client.on("interactionCreate", async (interaction: Interaction) => {
 	if(interaction.isCommand()) {
-		if(fs.existsSync("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts")) {
-			import("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts").then(async (command) => {
-				await new command.Command().run(interaction as BaseCommandInteraction);
-			});
+		if(commands[(interaction as BaseCommandInteraction).commandName]) {
+			await commands[(interaction as BaseCommandInteraction).commandName].run(interaction as BaseCommandInteraction);
 		}
 		else {
 			console.error(colors.red + "\"" + (interaction as BaseCommandInteraction).commandName + "\"に対応するモジュールが存在しません。" + colors.reset);
@@ -196,13 +205,11 @@ client.on("interactionCreate", async (interaction: Interaction) => {
 		}
 	}
 	else if(interaction.isButton()) {
-		if(fs.existsSync("./commands/button_" + (interaction as ButtonInteraction).customId + ".ts")) {
-			import("./commands/button_" + (interaction as ButtonInteraction).customId + ".ts").then(async (buttonCommand) => {
-				await new buttonCommand.ButtonCommand().run(interaction as ButtonInteraction);
-			})
+		if(buttonCommands[(interaction as ButtonInteraction).customId]) {
+			await buttonCommands[(interaction as ButtonInteraction).customId].run(interaction as ButtonInteraction);
 		}
 		else {
-			console.error(colors.red + "\"button_" + (interaction as ButtonInteraction).customId + "\"に対応するモジュールが存在しません。" + colors.reset);
+			console.error(colors.red + "\"" + (interaction as ButtonInteraction).customId + "\"に対応するモジュールが存在しません。" + colors.reset);
 			await (interaction as ButtonInteraction).reply(":x: 送信されたコマンドに対応するモジュールが存在しません。\n");
 		}
 	}

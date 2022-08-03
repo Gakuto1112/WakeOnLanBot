@@ -1,9 +1,9 @@
-import {CommandBase} from "./CommandBase";
+import {Command} from "./Command";
 import {colors,settings} from "../WakeOnLanBot";
 import child_process from "child_process";
 import {BaseCommandInteraction} from "discord.js";
 
-export class Command extends CommandBase {
+export class WolCommand extends Command {
 	public async run(interaction: BaseCommandInteraction): Promise<void> {
 		console.info("マジックパケットを送信します。");
 		await interaction.reply(":loudspeaker: マジックパケットを送信します");

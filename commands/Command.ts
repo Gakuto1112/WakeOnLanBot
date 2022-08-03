@@ -1,5 +1,5 @@
 import {BaseCommandInteraction} from "discord.js";
 
-export abstract class CommandBase {
+export abstract class Command {
 	public abstract run(interaction: BaseCommandInteraction): Promise<void>;
 }

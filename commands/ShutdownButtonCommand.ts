@@ -1,8 +1,8 @@
-import {ButtonCommandBase} from "./ButtonCommandBase";
+import {ButtonCommand} from "./ButtonCommand";
 import {colors, execSSHCommand} from "../WakeOnLanBot";
 import {ButtonInteraction} from "discord.js";
 
-export class ButtonCommand extends ButtonCommandBase {
+export class ShutdownButtonCommand extends ButtonCommand {
 	public async run(interaction: ButtonInteraction): Promise<void> {
 		await execSSHCommand("shutdown /s /t 60 /c \"マジックパケット送信Botによりシャットダウンが実行されました。\"", async (stdout: string) => await interaction.reply(":desktop: コンピューターをシャットダウンします。"), async (stderr: string) => {
 			console.group(colors.red + "コマンドの実行に失敗しました。" + colors.reset);
