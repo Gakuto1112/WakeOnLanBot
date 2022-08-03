@@ -1,6 +1,6 @@
 import {Command} from "./Command";
 import {colors,settings} from "../WakeOnLanBot";
-import child_process from "child_process";
+import * as child_process from "child_process";
 import {BaseCommandInteraction} from "discord.js";
 
 export class WolCommand extends Command {
