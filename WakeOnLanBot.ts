@@ -3,11 +3,11 @@ import child_process from "child_process";
 import {Client, Intents, Interaction, BaseCommandInteraction} from "discord.js";
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
-const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
+export const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
 
 //設定ファイルの存在確認
 console.info("Settings.jsonを読み込んでいます...");
-let settings: {[key: string]: any}; //設定ファイルからの設定情報
+export let settings: {[key: string]: any}; //設定ファイルからの設定情報
 try {
 	settings = JSON.parse(fs.readFileSync("Settings.json", "utf-8"));
 }
@@ -114,19 +114,14 @@ client.once("ready", () => {
 //コマンドの応答
 client.on("interactionCreate", async (interaction: Interaction) => {
 	if(interaction.isCommand()) {
-		switch((interaction as BaseCommandInteraction).commandName) {
-			case "wol":
-				console.info("マジックパケットを送信します。");
-				await (interaction as BaseCommandInteraction).reply(":loudspeaker: マジックパケットを送信します");
-				child_process.exec("sudo etherwake " + settings.targetMacAddress, async (error: child_process.ExecException | null, stdout: string, stderr: string) => {
-					if(error) {
-						console.group(colors.red + "マジックパケットの送信に失敗しました。" + colors.reset);
-						console.error(stderr);
-						console.groupEnd();
-						await (interaction as BaseCommandInteraction).followUp(":x: マジックパケットの送信に失敗しました\n" + stderr);
-					}
-				});
-				break;
+		if(fs.existsSync("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts")) {
+			await import("./commands/" + (interaction as BaseCommandInteraction).commandName + ".ts").then(async (command) => {
+				await new command.Command().run(interaction as BaseCommandInteraction);
+			});
+		}
+		else {
+			console.error(colors.red + "\"" + (interaction as BaseCommandInteraction).commandName + "\"に対応するモジュールが存在しません。" + colors.reset);
+			await (interaction as BaseCommandInteraction).reply(":x: 送信されたコマンドに対応するモジュールが存在しません。\n");
 		}
 	}
 });
