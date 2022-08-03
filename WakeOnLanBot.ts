@@ -7,7 +7,9 @@ import {WolCommand} from "./commands/Wol";
 import {Command} from "./commands/Command";
 import {ButtonCommand} from "./commands/ButtonCommand";
 import {ShutDownCommand} from "./commands/Shutdown";
-import {ShutdownButtonCommand} from "./commands/ShutdownButtonCommand";
+import {ShutdownButtonCommand} from "./commands/ShutdownButton";
+import {RebootCommand} from "./commands/Reboot";
+import {RebootButtonCommand} from "./commands/RebootButton";
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
 export const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
@@ -156,8 +158,8 @@ client.once("ready", () => {
 	console.info(colors.green + client.user!.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
 
 	//コマンドの読み込み
-	commands = {wol: new WolCommand(), shutdown: new ShutDownCommand()};
-	buttonCommands = {shutdown_confirm: new ShutdownButtonCommand()};
+	commands = {wol: new WolCommand(), shutdown: new ShutDownCommand(), reboot: new RebootCommand()};
+	buttonCommands = {shutdown_confirm: new ShutdownButtonCommand(), reboot_confirm: new RebootButtonCommand()};
 
 	//コマンド登録
 	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}, {name: "reboot", description: "コンピューターを再起動します。"}], "863035320052482068");
