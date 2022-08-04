@@ -7,7 +7,7 @@ export class ShutdownButtonCommand extends ButtonCommand {
 	protected readonly DONE_MESSAGE: string = "コンピューターをシャットダウンします。"
 	public async run(interaction: ButtonInteraction): Promise<void> {
 		await interaction.reply(":desktop: " + this.DONE_MESSAGE);
-		await execSSHCommand(interaction, this.COMMAND, async (stdout: string) => await interaction.reply(":desktop: " + this.DONE_MESSAGE), async (stderr: string) => {
+		await execSSHCommand(interaction, this.COMMAND, () => {}, async (stderr: string) => {
 			console.group(colors.red + "コマンドの実行に失敗しました。" + colors.reset);
 			console.error(stderr);
 			console.groupEnd();

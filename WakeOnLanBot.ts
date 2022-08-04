@@ -10,6 +10,7 @@ import {ShutDownCommand} from "./commands/Shutdown";
 import {ShutdownButtonCommand} from "./commands/ShutdownButton";
 import {RebootCommand} from "./commands/Reboot";
 import {RebootButtonCommand} from "./commands/RebootButton";
+import {SleepCommand} from "./commands/Sleep";
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]});
 export const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
@@ -160,11 +161,11 @@ client.once("ready", () => {
 	console.info(colors.green + client.user!.tag + colors.reset + "でログインしました。\n終了するにはウィンドウを閉じるか、Ctrl + Cを押して下さい。");
 
 	//コマンドの読み込み
-	commands = {wol: new WolCommand(), shutdown: new ShutDownCommand(), reboot: new RebootCommand()};
+	commands = {wol: new WolCommand(), shutdown: new ShutDownCommand(), reboot: new RebootCommand(), sleep: new SleepCommand()};
 	buttonCommands = {shutdown_confirm: new ShutdownButtonCommand(), reboot_confirm: new RebootButtonCommand()};
 
 	//コマンド登録
-	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}, {name: "reboot", description: "コンピューターを再起動します。"}]);
+	client.application!.commands.set([{name: "wol", description: "リモートからコンピューターを起動します。"}, {name: "shutdown", description: "コンピューターをシャットダウンします。"}, {name: "reboot", description: "コンピューターを再起動します。"}, {name: "sleep", description: "コンピューターを休止状態にします。"}]);
 
 	//1分おきにping問い合わせ
 	function ping(): void {
