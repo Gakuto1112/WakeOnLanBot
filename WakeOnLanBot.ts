@@ -169,9 +169,8 @@ client.once("ready", () => {
 		//ping問い合わせ
 		console.info("ping問い合わせを行っています...");
 		child_process.exec("ping " + settings.targetIPAddress + " -c 5", (error: child_process.ExecException | null, stdout: string, stderr: string) => {
-			const pingRegExp: RegExp = new RegExp("\\d+ received");
 			if(error) {
-				if(pingRegExp.test(stderr)) {
+				if(/\d+ received/.test(stdout)) {
 					console.info("対象のデバイスは停止しています。");
 					isPCAwake = false;
 					client.user!.setActivity();
