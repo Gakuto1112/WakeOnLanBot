@@ -15,15 +15,16 @@ const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_M
 export const colors: {[key: string]: string} = {black:"\u001b[30m", red: "\u001b[31m", green: "\u001b[32m", yellow: "\u001b[33m", blue: "\u001b[34m", magenta: "\u001b[35m", cyan: "\u001b[36m", white: "\u001b[37m", reset: "\u001b[0m"}; //標準出力に色を付ける制御文字
 
 //SSHコマンドを実行する。
-export async function execSSHCommand(command: string, successCallback: Function = (stdout: string) => {}, errorCallback: Function = (stderr: string) => {}) {
+export async function execSSHCommand(interaction: Interaction, command: string, successCallback: Function = (stdout: string) => {}, errorCallback: Function = (stderr: string) => {}) {
 	const client = new ssh.Client();
 	client.once("ready", () => {
 		client.exec(command, (error: Error | undefined, stream: ssh.Channel) => {
 			let alreadyCallBackRunned: boolean = false;
 			if(error) {
-				console.group(colors.red + "SSH接続でエラーが発生しました。\n\t" + colors.reset);
+				console.group(colors.red + "SSH接続でエラーが発生しました。" + colors.reset);
 				console.error(error.message);
 				console.groupEnd();
+				(interaction as BaseCommandInteraction).followUp(":x: SSH接続でエラーが発生しました。\n" + error.message);
 			}
 			stream.once("close", () => {
 				if(!alreadyCallBackRunned) successCallback("");
@@ -41,9 +42,10 @@ export async function execSSHCommand(command: string, successCallback: Function 
 	});
 	client.on("error", (error: any) => {
 		if(error.errno != -104) {
-			console.group(colors.red + "SSH接続でエラーが発生しました。\n\t" + colors.reset);
+			console.group(colors.red + "SSH接続でエラーが発生しました。" + colors.reset);
 			console.error(error.message);
 			console.groupEnd();
+			(interaction as BaseCommandInteraction).followUp(":x: SSH接続でエラーが発生しました。\n" + error.message);
 		}
 	});
 	client.connect({host: settings.targetIPAddress, port: settings.port, username: settings.userName, privateKey: fs.readFileSync(settings.privateKeyFile)});
